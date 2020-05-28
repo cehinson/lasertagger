@@ -92,7 +92,7 @@ class EditingTask(object):
     first_tokens: The indices of the first tokens of each source text.
   """
 
-  def __init__(self, sources):
+  def __init__(self, sources, lang='en'):
     """Initializes an instance of EditingTask.
 
     Args:
@@ -101,7 +101,7 @@ class EditingTask(object):
         be swapped).
     """
     self.sources = sources
-    source_token_lists = [utils.get_token_list(text) for text in self.sources]
+    source_token_lists = [utils.get_token_list(text, lang) for text in self.sources]
     # Tokens of the source texts concatenated into a single list.
     self.source_tokens = []
     # The indices of the first tokens of each source text.
@@ -109,6 +109,7 @@ class EditingTask(object):
     for token_list in source_token_lists:
       self.first_tokens.append(len(self.source_tokens))
       self.source_tokens.extend(token_list)
+    self._lang = lang
 
   def _realize_sequence(self, tokens, tags):
     """Realizes output text corresponding to a single source text.
@@ -126,7 +127,13 @@ class EditingTask(object):
         output_tokens.append(tag.added_phrase)
       if tag.tag_type in (TagType.KEEP, TagType.SWAP):
         output_tokens.append(token)
-    return ' '.join(output_tokens)
+    
+    if self._lang == 'en':
+      return ' '.join(output_tokens)
+    elif self._lang == 'zh':
+      return ''.join(output_tokens)
+    else:
+      raise NotImplementedError
 
   def _first_char_to_upper(self, text):
     """Upcases the first character of the text."""
@@ -185,4 +192,10 @@ class EditingTask(object):
           # a proper noun or an abbreviation that should always be capitalized.
           realized_source = self._first_char_to_lower(realized_source)
       outputs.append(realized_source)
-    return ' '.join(outputs)
+    
+    if self._lang == 'en':
+      return ' '.join(outputs)
+    elif self._lang == 'zh':
+      return ''.join(outputs)
+    else:
+      raise NotImplementedError

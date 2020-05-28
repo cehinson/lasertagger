@@ -27,7 +27,15 @@ from typing import Iterator, Mapping, Sequence, Text, Tuple
 import tensorflow as tf
 
 
-def get_token_list(text):
+def get_token_list(text, lang='en'):
+  if lang == 'en':
+    return get_token_list_en(text)
+  elif lang == 'zh':
+    return get_token_list_zh(text)
+  else:
+    raise NotImplementedError
+
+def get_token_list_en(text):
   """Returns a list of tokens.
 
   This function expects that the tokens in the text are separated by space
@@ -38,6 +46,14 @@ def get_token_list(text):
     text: String to be split into tokens.
   """
   return text.split()
+
+def get_token_list_zh(text):
+  """
+  For chinese
+
+  Tokens are not separated by a space, so have to be separated this way.
+  """
+  return [c for c in text]
 
 
 def yield_sources_and_targets(
@@ -68,9 +84,13 @@ def _yield_wikisplit_examples(
   # The Wikisplit format expects a TSV file with the source on the first and the
   # target on the second column.
   with tf.io.gfile.GFile(input_file) as f:
-    for line in f:
-      source, target = line.rstrip('\n').split('\t')
-      yield [source], target
+    for i, line in enumerate(f):
+      try:
+        source, target = line.rstrip('\n').split('\t')
+        yield [source], target
+      except Exception as e:
+        print(e)
+        print(f'ERROR line {i} : {line}')
 
 
 def _yield_discofuse_examples(

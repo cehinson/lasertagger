@@ -56,7 +56,10 @@ flags.DEFINE_bool(
     'models and False for cased models.')
 flags.DEFINE_bool('enable_swap_tag', True, 'Whether to enable the SWAP tag.')
 flags.DEFINE_string('saved_model', None, 'Path to an exported TF model.')
-
+flags.DEFINE_enum(
+  'lang', 'en', ['en', 'zh'],
+  'Language'
+)
 
 def main(argv):
   if len(argv) > 1:
@@ -71,13 +74,15 @@ def main(argv):
   label_map = utils.read_label_map(FLAGS.label_map_file)
   converter = tagging_converter.TaggingConverter(
       tagging_converter.get_phrase_vocabulary_from_label_map(label_map),
-      FLAGS.enable_swap_tag)
+      FLAGS.enable_swap_tag,
+      FLAGS.lang)
   builder = bert_example.BertExampleBuilder(label_map, FLAGS.vocab_file,
                                             FLAGS.max_seq_length,
-                                            FLAGS.do_lower_case, converter)
+                                            FLAGS.do_lower_case, converter,
+                                            FLAGS.lang)
   predictor = predict_utils.LaserTaggerPredictor(
       tf.contrib.predictor.from_saved_model(FLAGS.saved_model), builder,
-      label_map)
+      label_map, FLAGS.lang)
 
   num_predicted = 0
   with tf.gfile.Open(FLAGS.output_file, 'w') as writer:

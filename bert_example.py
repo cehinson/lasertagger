@@ -108,7 +108,7 @@ class BertExampleBuilder(object):
 
   def __init__(self, label_map, vocab_file,
                max_seq_length, do_lower_case,
-               converter):
+               converter, lang='en'):
     """Initializes an instance of BertExampleBuilder.
 
     Args:
@@ -126,6 +126,7 @@ class BertExampleBuilder(object):
     self._converter = converter
     self._pad_id = self._get_pad_id()
     self._keep_tag_id = self._label_map['KEEP']
+    self._lang = lang
 
   def build_bert_example(
       self,
@@ -147,9 +148,9 @@ class BertExampleBuilder(object):
       and use_arbitrary_target_ids_for_infeasible_examples == False.
     """
     # Compute target labels.
-    task = tagging.EditingTask(sources)
+    task = tagging.EditingTask(sources, self._lang)
     if target is not None:
-      tags = self._converter.compute_tags(task, target)
+      tags = self._converter.compute_tags(task, target, self._lang)
       if not tags:
         if use_arbitrary_target_ids_for_infeasible_examples:
           # Create a tag sequence [KEEP, DELETE, KEEP, DELETE, ...] which is

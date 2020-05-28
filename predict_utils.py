@@ -32,7 +32,8 @@ class LaserTaggerPredictor(object):
 
   def __init__(self, tf_predictor,
                example_builder,
-               label_map):
+               label_map,
+               lang='en'):
     """Initializes an instance of LaserTaggerPredictor.
 
     Args:
@@ -45,6 +46,7 @@ class LaserTaggerPredictor(object):
     self._id_2_tag = {
         tag_id: tagging.Tag(tag) for tag, tag_id in label_map.items()
     }
+    self._lang = lang
 
   def predict(self, sources):
     """Returns realized prediction for given sources."""

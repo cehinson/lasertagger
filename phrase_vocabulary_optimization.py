@@ -18,7 +18,7 @@
 
 The goal is to find a fixed-size set of phrases that cover as many training
 examples as possible. Based on the phrases, saves a file containing all possible
-tags to be predicted and another file reporting the percentage of covered
+tags to be predicted and another file reporting the percentalanguagege of covered
 training examples with different vocabulary sizes.
 """
 
@@ -68,6 +68,10 @@ flags.DEFINE_integer(
     'Number of extra phrases that are not included in the vocabulary but for '
     'which we compute the coverage numbers. These numbers help determining '
     'whether the vocabulary size should have been larger.')
+flags.DEFINE_enum(
+  'lang', 'en', ['en', 'zh'],
+  'Language'
+)
 
 
 def _compute_lcs(source, target):
@@ -125,7 +129,7 @@ def _backtrack(table, source, target, i, j):
     return _backtrack(table, source, target, i - 1, j)
 
 
-def _get_added_phrases(source: Text, target: Text) -> Sequence[Text]:
+def _get_added_phrases(source: Text, target: Text, lang: str = 'en') -> Sequence[Text]:
   """Computes the phrases that need to be added to the source to get the target.
 
   This is done by aligning each token in the LCS to the first match in the
@@ -146,8 +150,8 @@ def _get_added_phrases(source: Text, target: Text) -> Sequence[Text]:
   Returns:
     List of added phrases.
   """
-  source_tokens = utils.get_token_list(source.lower())
-  target_tokens = utils.get_token_list(target.lower())
+  source_tokens = utils.get_token_list(source.lower(), lang)
+  target_tokens = utils.get_token_list(target.lower(), lang)
   kept_tokens = _compute_lcs(source_tokens, target_tokens)
   added_phrases = []
   # Index of the `kept_tokens` element that we are currently looking for.
@@ -157,16 +161,22 @@ def _get_added_phrases(source: Text, target: Text) -> Sequence[Text]:
     if kept_idx < len(kept_tokens) and token == kept_tokens[kept_idx]:
       kept_idx += 1
       if phrase:
-        added_phrases.append(' '.join(phrase))
+        if lang == 'zh':
+          added_phrases.append(''.join(phrase))
+        else:
+          added_phrases.append(' '.join(phrase))
         phrase = []
     else:
       phrase.append(token)
   if phrase:
-    added_phrases.append(' '.join(phrase))
+    if lang == 'zh':
+      added_phrases.append(''.join(phrase))
+    else:
+      added_phrases.append(' '.join(phrase))
   return added_phrases
 
 
-def _added_token_counts(data_iterator, try_swapping, max_input_examples=10000):
+def _added_token_counts(data_iterator, try_swapping, max_input_examples=10000, lang='en'):
   """Computes how many times different phrases have to be added.
 
   Args:
@@ -188,9 +198,9 @@ def _added_token_counts(data_iterator, try_swapping, max_input_examples=10000):
       break
     logging.log_every_n(logging.INFO, f'{num_examples} examples processed.',
                         1000)
-    added_phrases = _get_added_phrases(' '.join(sources), target)
+    added_phrases = _get_added_phrases(' '.join(sources), target, lang)
     if try_swapping and len(sources) == 2:
-      added_phrases_swap = _get_added_phrases(' '.join(sources[::-1]), target)
+      added_phrases_swap = _get_added_phrases(' '.join(sources[::-1]), target, lang)
       # If we can align more and have to add less after swapping, we assume that
       # the sources would be swapped during conversion.
       if len(''.join(added_phrases_swap)) < len(''.join(added_phrases)):
@@ -256,7 +266,7 @@ def main(argv):
   data_iterator = utils.yield_sources_and_targets(FLAGS.input_file,
                                                   FLAGS.input_format)
   phrase_counter, all_added_phrases = _added_token_counts(
-      data_iterator, FLAGS.enable_swap_tag, FLAGS.max_input_examples)
+      data_iterator, FLAGS.enable_swap_tag, FLAGS.max_input_examples, FLAGS.lang)
   matrix = _construct_added_phrases_matrix(all_added_phrases, phrase_counter)
   num_examples = len(all_added_phrases)
 

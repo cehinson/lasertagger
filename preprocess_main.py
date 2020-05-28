@@ -67,6 +67,10 @@ flags.DEFINE_bool(
     'target ids will correspond to the tag sequence KEEP-DELETE-KEEP-DELETE... '
     'which should be very unlikely to be predicted by chance. This will be '
     'useful for getting more accurate eval scores during training.')
+flags.DEFINE_enum(
+  'lang', 'en', ['en', 'zh'],
+  'Language'
+)
 
 
 def _write_example_count(count: int) -> Text:
@@ -98,10 +102,12 @@ def main(argv):
   label_map = utils.read_label_map(FLAGS.label_map_file)
   converter = tagging_converter.TaggingConverter(
       tagging_converter.get_phrase_vocabulary_from_label_map(label_map),
-      FLAGS.enable_swap_tag)
+      FLAGS.enable_swap_tag,
+      FLAGS.lang)
   builder = bert_example.BertExampleBuilder(label_map, FLAGS.vocab_file,
                                             FLAGS.max_seq_length,
-                                            FLAGS.do_lower_case, converter)
+                                            FLAGS.do_lower_case, converter,
+                                            FLAGS.lang)
 
   num_converted = 0
   with tf.io.TFRecordWriter(FLAGS.output_tfrecord) as writer:

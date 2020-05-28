@@ -34,7 +34,7 @@ from typing import Iterable, Mapping, Sequence, Set, Text, Tuple
 class TaggingConverter(object):
   """Converter from training target texts into tagging format."""
 
-  def __init__(self, phrase_vocabulary, do_swap=True):
+  def __init__(self, phrase_vocabulary, do_swap=True, lang='en'):
     """Initializes an instance of TaggingConverter.
 
     Args:
@@ -50,13 +50,13 @@ class TaggingConverter(object):
     # Set of tokens that are part of a phrase in self.phrase_vocabulary.
     self._token_vocabulary = set()
     for phrase in self._phrase_vocabulary:
-      tokens = utils.get_token_list(phrase)
+      tokens = utils.get_token_list(phrase, lang)
       self._token_vocabulary |= set(tokens)
       if len(tokens) > self._max_added_phrase_length:
         self._max_added_phrase_length = len(tokens)
 
   def compute_tags(self, task,
-                   target):
+                   target, lang='en'):
     """Computes tags needed for converting the source into the target.
 
     Args:
@@ -67,12 +67,12 @@ class TaggingConverter(object):
       List of tagging.Tag objects. If the source couldn't be converted into the
       target via tagging, returns an empty list.
     """
-    target_tokens = utils.get_token_list(target.lower())
+    target_tokens = utils.get_token_list(target.lower(), lang)
     tags = self._compute_tags_fixed_order(task.source_tokens, target_tokens)
     # If conversion fails, try to obtain the target after swapping the source
     # order.
     if not tags and len(task.sources) == 2 and self._do_swap:
-      swapped_task = tagging.EditingTask(task.sources[::-1])
+      swapped_task = tagging.EditingTask(task.sources[::-1], lang)
       tags = self._compute_tags_fixed_order(swapped_task.source_tokens,
                                             target_tokens)
       if tags:
@@ -100,8 +100,17 @@ class TaggingConverter(object):
     source_token_idx = 0
     target_token_idx = 0
     while target_token_idx < len(target_tokens):
-      tags[source_token_idx], target_token_idx = self._compute_single_tag(
-          source_tokens[source_token_idx], target_token_idx, target_tokens)
+      try:
+        tags[source_token_idx], target_token_idx = self._compute_single_tag(
+            source_tokens[source_token_idx], target_token_idx, target_tokens)
+      except Exception as e:
+        print(e)
+        print(tags)
+        print(source_token_idx)
+        print(target_token_idx)
+        print(source_tokens)
+        print(target_tokens)
+        return []
       # If we're adding a phrase and the previous source token(s) were deleted,
       # we could add the phrase before a previously deleted token and still get
       # the same realized output. For example:
