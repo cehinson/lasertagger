@@ -20,7 +20,7 @@ LaserTagger is built on Python 3, Tensorflow and
 [BERT](https://github.com/google-research/bert). It works with CPU, GPU, and
 Cloud TPU.
 
-## NEW!!
+## New Language Support:
 Chinese support (Traditional and Simplified)
 Follow the usage instructions, and add 
 --lang=zh as a parameter.
